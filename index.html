@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#005EB8">
+<meta name="robots" content="noindex">
+<title>Live quiz · Escalation pathways</title>
+<style>
+:root{--blue:#005EB8;--dk:#003087;--green:#009639;--red:#DA291C;--yellow:#FFB81C;--orange:#ED8B00;--teal:#00827F;
+--purple:#330071;--text:#212B32;--grey:#425563;--mid:#768692;--pale:#E8EDEE;--bg:#F0F4F5;--white:#fff;--lb:#E8F1FA;
+--gt:#EAF6EE;--rt:#FDEEEC;--yt:#FFF6DB}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;
+-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:4px solid var(--yellow);outline-offset:2px}
+.hidden{display:none!important}
+/* ---------- shared header ---------- */
+.bar{background:var(--blue);color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;
+padding-top:max(10px,env(safe-area-inset-top))}
+.bar .t{font-weight:700;font-size:16px;flex:1;line-height:1.2}
+.bar .t small{display:block;font-weight:400;opacity:.85;font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;background:#9be29b;display:inline-block;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.dot.off{background:#ffb3ad}
+.status{font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+/* ---------- participant ---------- */
+.p-main{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+.card{background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:18px}
+.kicker{font-size:13px;font-weight:700;color:var(--blue);letter-spacing:.04em;text-transform:uppercase;margin:0 0 6px}
+.q{font-size:20px;font-weight:700;line-height:1.3;margin:0 0 14px}
+.sub{color:var(--grey);font-size:15px;line-height:1.4;margin:0 0 14px}
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:2px solid var(--pale);
+border-radius:12px;padding:12px 14px;min-height:58px;font-size:16px;line-height:1.3;transition:transform .08s,border-color .15s}
+.opt:active{transform:scale(.99)}
+.opt .l{flex:0 0 32px;height:32px;border-radius:50%;background:var(--lb);color:var(--blue);font-weight:700;display:grid;
+place-items:center}
+.opt.sel{border-color:var(--blue);background:var(--lb)}
+.opt.sel .l{background:var(--blue);color:#fff}
+.opt.right{border-color:var(--green);background:var(--gt)}
+.opt.right .l{background:var(--green);color:#fff}
+.opt.wrong{border-color:var(--red);background:var(--rt)}
+.opt.wrong .l{background:var(--red);color:#fff}
+.opt[disabled]{cursor:default}
+.units{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.units .opt{justify-content:center;font-weight:700}
+.go{display:block;width:100%;margin-top:16px;background:var(--green);color:#fff;border:0;border-radius:12px;padding:15px;
+font-size:18px;font-weight:700;box-shadow:0 3px 0 #006b29}
+.go[disabled]{background:#b7c3c8;box-shadow:none;cursor:default}
+.link{background:none;border:0;color:var(--blue);text-decoration:underline;font-size:15px;padding:10px 0;display:block;
+margin:8px auto 0}
+.progress{display:flex;gap:6px;margin:0 0 12px}
+.progress i{flex:1;height:6px;border-radius:3px;background:var(--pale)}
+.progress i.on{background:var(--blue)}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.scale .opt{flex-direction:column;justify-content:center;gap:4px;text-align:center;padding:10px 4px;font-size:13px}
+.scale .opt b{font-size:22px}
+.big{font-size:54px;line-height:1;margin:8px 0;text-align:center}
+.center{text-align:center}
+.feedback{border-radius:12px;padding:14px;margin-top:14px;font-size:15px;line-height:1.45}
+.feedback.ok{background:var(--gt);border:2px solid var(--green)}
+.feedback.no{background:var(--rt);border:2px solid var(--red)}
+.feedback.na{background:var(--yt);border:2px solid var(--yellow)}
+.feedback b.h{display:block;font-size:18px;margin-bottom:4px}
+.locked{margin-top:14px;padding:14px;border-radius:12px;background:var(--lb);color:var(--dk);font-weight:700;text-align:center}
+.pulse{display:inline-flex;gap:6px;margin:12px auto}
+.pulse i{width:10px;height:10px;border-radius:50%;background:var(--blue);animation:pb 1.2s infinite ease-in-out}
+.pulse i:nth-child(2){animation-delay:.15s}.pulse i:nth-child(3){animation-delay:.3s}
+@keyframes pb{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+.tbar{height:6px;border-radius:3px;background:var(--pale);overflow:hidden;margin:0 0 12px}
+.tbar i{display:block;height:100%;background:var(--orange);transition:width .9s linear}
+.score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center;margin:10px 0}
+.score div b{display:block;font-size:38px;color:var(--blue)}
+.score div span{font-size:13px;color:var(--grey)}
+.score .arrow{font-size:28px;color:var(--mid)}
+.note{font-size:13px;color:var(--grey);text-align:center;margin-top:14px;line-height:1.4}
+.err{background:var(--rt);border:2px solid var(--red);border-radius:12px;padding:16px;line-height:1.45}
+/* ---------- presenter ---------- */
+body.host{background:#0b2545;color:#fff;overflow:hidden}
+.h-wrap{height:100vh;height:100dvh;display:grid;grid-template-rows:auto 1fr auto}
+.h-top{display:flex;align-items:center;gap:2vw;padding:1.2vh 2vw;background:var(--blue)}
+.h-top .t{font-size:clamp(16px,1.5vw,30px);font-weight:700;flex:1}
+.h-top .t small{font-weight:400;opacity:.85;margin-left:.6em}
+.pill{background:rgba(255,255,255,.14);border-radius:999px;padding:.4em .9em;font-size:clamp(13px,1.15vw,24px);
+display:flex;align-items:center;gap:.5em;white-space:nowrap}
+.h-main{padding:2.5vh 3vw;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.h-foot{display:flex;align-items:center;gap:1vw;padding:1.2vh 2vw;background:rgba(255,255,255,.06)}
+.h-foot .hint{flex:1;font-size:clamp(12px,.95vw,20px);opacity:.7}
+.hbtn{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:10px;padding:.7em 1.2em;
+font-size:clamp(14px,1.2vw,26px);font-weight:700}
+.hbtn.primary{background:var(--green)}
+.hbtn.warn{background:var(--red)}
+.lobby{display:grid;grid-template-columns:auto 1fr;gap:4vw;align-items:center;flex:1;min-height:0}
+.qrbox{background:#fff;border-radius:2vw;padding:2vw;text-align:center;color:var(--dk)}
+.qrbox svg{width:min(34vw,56vh);height:min(34vw,56vh);display:block}
+.overlay .qrbox svg{width:min(60vw,72vh);height:min(60vw,72vh)}
+.qrbox .u{font-size:clamp(16px,1.9vw,40px);font-weight:700;margin-top:1.2vh;color:var(--blue)}
+.lobby h1{font-size:clamp(30px,4.2vw,90px);margin:0 0 1vh;line-height:1.05}
+.lobby p{font-size:clamp(16px,1.8vw,38px);opacity:.9;margin:0 0 3vh;line-height:1.35}
+.counters{display:flex;gap:2vw;margin-bottom:3vh}
+.counter{background:rgba(255,255,255,.1);border-radius:1.4vw;padding:1.6vh 2vw;min-width:12vw}
+.counter b{display:block;font-size:clamp(34px,5vw,110px);line-height:1}
+.counter span{font-size:clamp(13px,1.2vw,26px);opacity:.85}
+.chips{display:flex;flex-wrap:wrap;gap:.8vw}
+.chip{background:rgba(255,255,255,.14);border-radius:999px;padding:.45em 1em;font-size:clamp(13px,1.25vw,28px)}
+.qhead{display:flex;align-items:center;gap:2vw;margin-bottom:2vh}
+.qnum{font-size:clamp(14px,1.4vw,30px);font-weight:700;color:var(--yellow);letter-spacing:.06em;text-transform:uppercase}
+.qtext{font-size:clamp(22px,2.9vw,64px);font-weight:700;line-height:1.2;margin:0 0 3vh}
+.answered{margin-left:auto;font-size:clamp(14px,1.5vw,32px);opacity:.9}
+.ring{width:clamp(44px,4.6vw,100px);height:clamp(44px,4.6vw,100px);position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(16px,1.6vw,34px)}
+.hopts{display:grid;gap:1.6vh;flex:1;align-content:start}
+.hopt{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1.4vw;background:rgba(255,255,255,.08);
+border-radius:1.2vw;padding:1.6vh 1.6vw;position:relative;overflow:hidden;font-size:clamp(16px,1.9vw,42px);line-height:1.25}
+.hopt .fill{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.14);width:0;transition:width .8s ease}
+.hopt>*:not(.fill){position:relative}
+.hopt .l{width:2.2em;height:2.2em;border-radius:50%;background:#fff;color:var(--dk);font-weight:700;display:grid;
+place-items:center;font-size:.8em}
+.hopt .n{font-weight:700;min-width:4.5em;text-align:right;opacity:0}
+.reveal .hopt .n{opacity:1}
+.reveal .hopt{opacity:.55}
+.reveal .hopt.right{opacity:1;background:rgba(0,150,57,.35);box-shadow:inset 0 0 0 3px #7be495}
+.reveal .hopt.right .fill{background:rgba(0,150,57,.55)}
+.reveal .hopt.right .l{background:var(--green);color:#fff}
+.why{margin-top:2vh;background:rgba(255,255,255,.1);border-left:.5vw solid var(--yellow);border-radius:.8vw;
+padding:1.6vh 1.6vw;font-size:clamp(14px,1.55vw,34px);line-height:1.4}
+.res{display:grid;grid-template-columns:1.1fr 1fr;gap:2.5vw;flex:1;min-height:0}
+.res h1{font-size:clamp(26px,3.4vw,74px);margin:0 0 2vh}
+.kpi{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:rgba(255,255,255,.08);
+border-radius:1.4vw;padding:2vh 2vw;margin-bottom:2vh;text-align:center}
+.kpi b{display:block;font-size:clamp(34px,5.2vw,120px);line-height:1}
+.kpi span{font-size:clamp(12px,1.15vw,26px);opacity:.85}
+.kpi .ar{font-size:clamp(24px,3vw,64px);opacity:.6}
+.kpi .after b{color:#7be495}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:1.4vw}
+.mini .kpi b{font-size:clamp(24px,3.2vw,70px)}
+.bars{background:rgba(255,255,255,.06);border-radius:1.4vw;padding:2vh 1.6vw;display:grid;gap:2.2vh;align-content:start}
+.bars h2,.league h2{font-size:clamp(14px,1.35vw,30px);margin:0 0 .6vh;opacity:.85;font-weight:700}
+.brow{display:grid;grid-template-columns:minmax(7em,15vw) 1fr;gap:1vw;align-items:center;font-size:clamp(12px,1.2vw,27px)}
+.brow .lab{font-weight:700}
+.btrack{display:grid;gap:.4vh}
+.b{height:2.6vh;min-height:12px;border-radius:999px;background:rgba(255,255,255,.12);position:relative}
+.b i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;transition:width 1s ease}
+.b.pre i{background:#9fb4c3}.b.post i{background:#7be495}
+.b em{position:absolute;right:.4em;top:50%;transform:translateY(-50%);font-style:normal;font-size:.85em}
+.legend{display:flex;gap:1.6vw;font-size:clamp(11px,1vw,22px);opacity:.85}
+.legend i{display:inline-block;width:.9em;height:.9em;border-radius:50%;margin-right:.35em;vertical-align:-.1em}
+.league{margin-top:2vh;background:rgba(255,255,255,.06);border-radius:1.4vw;padding:2vh 1.6vw}
+.lrow{display:grid;grid-template-columns:2.2em 1fr auto;gap:1vw;align-items:center;font-size:clamp(13px,1.3vw,28px);
+padding:.5vh 0}
+.lrow .pos{font-weight:700;color:var(--yellow)}
+.gate{max-width:640px;margin:8vh auto;background:#fff;color:var(--text);border-radius:16px;padding:28px}
+.gate h1{margin:0 0 10px;color:var(--dk);font-size:26px}
+.gate p{line-height:1.5;color:var(--grey)}
+.gate input{width:100%;font-size:20px;padding:12px;border:2px solid var(--pale);border-radius:10px;margin:6px 0 12px}
+.gate .go{margin-top:6px}
+.menu{position:fixed;right:2vw;bottom:9vh;background:#fff;color:var(--text);border-radius:12px;
+box-shadow:0 8px 30px rgba(0,0,0,.35);padding:8px;display:grid;gap:4px;min-width:260px;z-index:5}
+.menu button{text-align:left;background:none;border:0;padding:10px 12px;border-radius:8px;font-size:16px}
+.menu button:hover{background:var(--pale)}
+.overlay{position:fixed;inset:0;background:rgba(11,37,69,.96);display:grid;place-items:center;z-index:6}
+.toast{position:fixed;left:50%;bottom:12vh;transform:translateX(-50%);background:#fff;color:var(--text);padding:12px 18px;
+border-radius:10px;font-weight:700;z-index:7;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+/* ---------- results screen (mode=screen): embedded in a wide box on a slide ---------- */
+body.screen{overflow:hidden}
+.s-wrap{height:100vh;height:100dvh;display:grid;grid-template-rows:auto 1fr;padding:2.4vh 1.8vw 2vh;gap:2vh}
+.s-top{display:flex;align-items:center;gap:1.4vw;font-size:3.4vh;white-space:nowrap}
+.s-title{font-weight:700;font-size:4.6vh}
+.s-status{opacity:.9}
+.s-join{margin-left:auto;display:flex;align-items:center;gap:.8vw;font-size:2.9vh;opacity:.95}
+.s-join .qr{background:#fff;border-radius:.8vh;padding:.5vh;line-height:0}
+.s-join .qr svg{width:10vh;height:10vh}
+.res.res3{grid-template-columns:1fr 1.55fr 1.05fr;gap:1.6vw;min-height:0;align-items:start}
+.res3 .kpi{padding:1.6vh 1vw;margin-bottom:1.6vh;border-radius:1.6vh}
+.res3 .kpi b{font-size:9vh}
+.res3 .kpi span{font-size:2.5vh}
+.res3 .kpi .ar{font-size:5.5vh}
+.res3 .mini{grid-template-columns:1fr;gap:0}
+.res3 .mini .kpi b{font-size:6vh}
+.res3 .bars{padding:1.8vh 1.2vw;gap:2vh;border-radius:1.6vh}
+.res3 .bars h2,.res3 .league h2{font-size:2.8vh;margin-bottom:.4vh}
+.res3 .brow{font-size:2.7vh;grid-template-columns:minmax(5.5em,12vw) 1fr;gap:.8vw}
+.res3 .b{height:2.6vh;min-height:8px}
+.res3 .legend{font-size:2.4vh}
+.res3 .league{margin-top:0;padding:1.8vh 1.2vw;border-radius:1.6vh;overflow:hidden}
+.res3 .lrow{font-size:3vh;padding:.45vh 0}
+.s-msg{height:100vh;display:grid;place-items:center;text-align:center;font-size:4vh;padding:4vh}
+.s-msg small{display:block;font-size:2.6vh;opacity:.75;margin-top:1.5vh}
+@media (max-width:380px){.q{font-size:18px}.opt{font-size:15px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"><p style="font:16px Arial;padding:24px;color:#425563">Loading the quiz… If nothing happens, your browser may be too old: try Chrome or Safari.</p></div>
+<script>/* QR Code Generator for JavaScript · Copyright (c) 2009 Kazuhiko Arase · MIT licence · https://github.com/kazuhikoarase/qrcode-generator */
+var qrcode=(function(){var P=function(x,w){var g=236,l=17,n=x,s=O[w],t=null,r=0,h=null,i=[],v={},_=function(a,f){r=n*4+17,t=(function(e){for(var u=new Array(e),o=0;o<e;o+=1){u[o]=new Array(e);for(var d=0;d<e;d+=1)u[o][d]=null}return u})(r),B(0,0),B(r-7,0),B(0,r-7),E(),T(),m(a,f),n>=7&&N(a),h==null&&(h=nr(n,s,i)),U(h,f)},B=function(a,f){for(var e=-1;e<=7;e+=1)if(!(a+e<=-1||r<=a+e))for(var u=-1;u<=7;u+=1)f+u<=-1||r<=f+u||(0<=e&&e<=6&&(u==0||u==6)||0<=u&&u<=6&&(e==0||e==6)||2<=e&&e<=4&&2<=u&&u<=4?t[a+e][f+u]=!0:t[a+e][f+u]=!1)},y=function(){for(var a=0,f=0,e=0;e<8;e+=1){_(!0,e);var u=k.getLostPoint(v);(e==0||a>u)&&(a=u,f=e)}return f},T=function(){for(var a=8;a<r-8;a+=1)t[a][6]==null&&(t[a][6]=a%2==0);for(var f=8;f<r-8;f+=1)t[6][f]==null&&(t[6][f]=f%2==0)},E=function(){for(var a=k.getPatternPosition(n),f=0;f<a.length;f+=1)for(var e=0;e<a.length;e+=1){var u=a[f],o=a[e];if(t[u][o]==null)for(var d=-2;d<=2;d+=1)for(var c=-2;c<=2;c+=1)d==-2||d==2||c==-2||c==2||d==0&&c==0?t[u+d][o+c]=!0:t[u+d][o+c]=!1}},N=function(a){for(var f=k.getBCHTypeNumber(n),e=0;e<18;e+=1){var u=!a&&(f>>e&1)==1;t[Math.floor(e/3)][e%3+r-8-3]=u}for(var e=0;e<18;e+=1){var u=!a&&(f>>e&1)==1;t[e%3+r-8-3][Math.floor(e/3)]=u}},m=function(a,f){for(var e=s<<3|f,u=k.getBCHTypeInfo(e),o=0;o<15;o+=1){var d=!a&&(u>>o&1)==1;o<6?t[o][8]=d:o<8?t[o+1][8]=d:t[r-15+o][8]=d}for(var o=0;o<15;o+=1){var d=!a&&(u>>o&1)==1;o<8?t[8][r-o-1]=d:o<9?t[8][15-o-1+1]=d:t[8][15-o-1]=d}t[r-8][8]=!a},U=function(a,f){for(var e=-1,u=r-1,o=7,d=0,c=k.getMaskFunction(f),p=r-1;p>0;p-=2)for(p==6&&(p-=1);;){for(var b=0;b<2;b+=1)if(t[u][p-b]==null){var C=!1;d<a.length&&(C=(a[d]>>>o&1)==1);var A=c(u,p-b);A&&(C=!C),t[u][p-b]=C,o-=1,o==-1&&(d+=1,o=7)}if(u+=e,u<0||r<=u){u-=e,e=-e;break}}},H=function(a,f){for(var e=0,u=0,o=0,d=new Array(f.length),c=new Array(f.length),p=0;p<f.length;p+=1){var b=f[p].dataCount,C=f[p].totalCount-b;u=Math.max(u,b),o=Math.max(o,C),d[p]=new Array(b);for(var A=0;A<d[p].length;A+=1)d[p][A]=255&a.getBuffer()[A+e];e+=b;var R=k.getErrorCorrectPolynomial(C),I=K(d[p],R.getLength()-1),S=I.mod(R);c[p]=new Array(R.getLength()-1);for(var A=0;A<c[p].length;A+=1){var X=A+S.getLength()-c[p].length;c[p][A]=X>=0?S.getAt(X):0}}for(var Z=0,A=0;A<f.length;A+=1)Z+=f[A].totalCount;for(var J=new Array(Z),Q=0,A=0;A<u;A+=1)for(var p=0;p<f.length;p+=1)A<d[p].length&&(J[Q]=d[p][A],Q+=1);for(var A=0;A<o;A+=1)for(var p=0;p<f.length;p+=1)A<c[p].length&&(J[Q]=c[p][A],Q+=1);return J},nr=function(a,f,e){for(var u=Y.getRSBlocks(a,f),o=G(),d=0;d<e.length;d+=1){var c=e[d];o.put(c.getMode(),4),o.put(c.getLength(),k.getLengthInBits(c.getMode(),a)),c.write(o)}for(var p=0,d=0;d<u.length;d+=1)p+=u[d].dataCount;if(o.getLengthInBits()>p*8)throw"code length overflow. ("+o.getLengthInBits()+">"+p*8+")";for(o.getLengthInBits()+4<=p*8&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=p*8||(o.put(g,8),o.getLengthInBits()>=p*8));)o.put(l,8);return H(o,u)};v.addData=function(a,f){f=f||"Byte";var e=null;switch(f){case"Numeric":e=$(a);break;case"Alphanumeric":e=W(a);break;case"Byte":e=V(a);break;case"Kanji":e=q(a);break;default:throw"mode:"+f}i.push(e),h=null},v.isDark=function(a,f){if(a<0||r<=a||f<0||r<=f)throw a+","+f;return t[a][f]},v.getModuleCount=function(){return r},v.make=function(){if(n<1){for(var a=1;a<40;a++){for(var f=Y.getRSBlocks(a,s),e=G(),u=0;u<i.length;u++){var o=i[u];e.put(o.getMode(),4),e.put(o.getLength(),k.getLengthInBits(o.getMode(),a)),o.write(e)}for(var d=0,u=0;u<f.length;u++)d+=f[u].dataCount;if(e.getLengthInBits()<=d*8)break}n=a}_(!1,y())},v.createTableTag=function(a,f){a=a||2,f=typeof f>"u"?a*4:f;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+f+"px;",e+='">',e+="<tbody>";for(var u=0;u<v.getModuleCount();u+=1){e+="<tr>";for(var o=0;o<v.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+a+"px;",e+=" height: "+a+"px;",e+=" background-color: ",e+=v.isDark(u,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>",e},v.createSvgTag=function(a,f,e,u){var o={};typeof arguments[0]=="object"&&(o=arguments[0],a=o.cellSize,f=o.margin,e=o.alt,u=o.title),a=a||2,f=typeof f>"u"?a*4:f,e=typeof e=="string"?{text:e}:e||{},e.text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,u=typeof u=="string"?{text:u}:u||{},u.text=u.text||null,u.id=u.text?u.id||"qrcode-title":null;var d=v.getModuleCount()*a+f*2,c,p,b,C,A="",R;for(R="l"+a+",0 0,"+a+" -"+a+",0 0,-"+a+"z ",A+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',A+=o.scalable?"":' width="'+d+'px" height="'+d+'px"',A+=' viewBox="0 0 '+d+" "+d+'" ',A+=' preserveAspectRatio="xMinYMin meet"',A+=u.text||e.text?' role="img" aria-labelledby="'+F([u.id,e.id].join(" ").trim())+'"':"",A+=">",A+=u.text?'<title id="'+F(u.id)+'">'+F(u.text)+"</title>":"",A+=e.text?'<description id="'+F(e.id)+'">'+F(e.text)+"</description>":"",A+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',A+='<path d="',b=0;b<v.getModuleCount();b+=1)for(C=b*a+f,c=0;c<v.getModuleCount();c+=1)v.isDark(b,c)&&(p=c*a+f,A+="M"+p+","+C+R);return A+='" stroke="transparent" fill="black"/>',A+="</svg>",A},v.createDataURL=function(a,f){a=a||2,f=typeof f>"u"?a*4:f;var e=v.getModuleCount()*a+f*2,u=f,o=e-f;return er(e,e,function(d,c){if(u<=d&&d<o&&u<=c&&c<o){var p=Math.floor((d-u)/a),b=Math.floor((c-u)/a);return v.isDark(b,p)?0:1}else return 1})},v.createImgTag=function(a,f,e){a=a||2,f=typeof f>"u"?a*4:f;var u=v.getModuleCount()*a+f*2,o="";return o+="<img",o+=' src="',o+=v.createDataURL(a,f),o+='"',o+=' width="',o+=u,o+='"',o+=' height="',o+=u,o+='"',e&&(o+=' alt="',o+=F(e),o+='"'),o+="/>",o};var F=function(a){for(var f="",e=0;e<a.length;e+=1){var u=a.charAt(e);switch(u){case"<":f+="&lt;";break;case">":f+="&gt;";break;case"&":f+="&amp;";break;case'"':f+="&quot;";break;default:f+=u;break}}return f},ar=function(a){var f=1;a=typeof a>"u"?f*2:a;var e=v.getModuleCount()*f+a*2,u=a,o=e-a,d,c,p,b,C,A={"\u2588\u2588":"\u2588","\u2588 ":"\u2580"," \u2588":"\u2584","  ":" "},R={"\u2588\u2588":"\u2580","\u2588 ":"\u2580"," \u2588":" ","  ":" "},I="";for(d=0;d<e;d+=2){for(p=Math.floor((d-u)/f),b=Math.floor((d+1-u)/f),c=0;c<e;c+=1)C="\u2588",u<=c&&c<o&&u<=d&&d<o&&v.isDark(p,Math.floor((c-u)/f))&&(C=" "),u<=c&&c<o&&u<=d+1&&d+1<o&&v.isDark(b,Math.floor((c-u)/f))?C+=" ":C+="\u2588",I+=a<1&&d+1>=o?R[C]:A[C];I+=`
+`}return e%2&&a>0?I.substring(0,I.length-e-1)+Array(e+1).join("\u2580"):I.substring(0,I.length-1)};return v.createASCII=function(a,f){if(a=a||1,a<2)return ar(f);a-=1,f=typeof f>"u"?a*2:f;var e=v.getModuleCount()*a+f*2,u=f,o=e-f,d,c,p,b,C=Array(a+1).join("\u2588\u2588"),A=Array(a+1).join("  "),R="",I="";for(d=0;d<e;d+=1){for(p=Math.floor((d-u)/a),I="",c=0;c<e;c+=1)b=1,u<=c&&c<o&&u<=d&&d<o&&v.isDark(p,Math.floor((c-u)/a))&&(b=0),I+=b?C:A;for(p=0;p<a;p+=1)R+=I+`
+`}return R.substring(0,R.length-1)},v.renderTo2dContext=function(a,f){f=f||2;for(var e=v.getModuleCount(),u=0;u<e;u++)for(var o=0;o<e;o++)a.fillStyle=v.isDark(u,o)?"black":"white",a.fillRect(u*f,o*f,f,f)},v};P.stringToBytesFuncs={default:function(x){for(var w=[],g=0;g<x.length;g+=1){var l=x.charCodeAt(g);w.push(l&255)}return w}},P.stringToBytes=P.stringToBytesFuncs.default,P.createStringToBytes=function(x,w){var g=(function(){for(var n=rr(x),s=function(){var T=n.read();if(T==-1)throw"eof";return T},t=0,r={};;){var h=n.read();if(h==-1)break;var i=s(),v=s(),_=s(),B=String.fromCharCode(h<<8|i),y=v<<8|_;r[B]=y,t+=1}if(t!=w)throw t+" != "+w;return r})(),l=63;return function(n){for(var s=[],t=0;t<n.length;t+=1){var r=n.charCodeAt(t);if(r<128)s.push(r);else{var h=g[n.charAt(t)];typeof h=="number"?(h&255)==h?s.push(h):(s.push(h>>>8),s.push(h&255)):s.push(l)}}return s}};var D={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},O={L:1,M:0,Q:3,H:2},L={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7},k=(function(){var x=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],w=1335,g=7973,l=21522,n={},s=function(t){for(var r=0;t!=0;)r+=1,t>>>=1;return r};return n.getBCHTypeInfo=function(t){for(var r=t<<10;s(r)-s(w)>=0;)r^=w<<s(r)-s(w);return(t<<10|r)^l},n.getBCHTypeNumber=function(t){for(var r=t<<12;s(r)-s(g)>=0;)r^=g<<s(r)-s(g);return t<<12|r},n.getPatternPosition=function(t){return x[t-1]},n.getMaskFunction=function(t){switch(t){case L.PATTERN000:return function(r,h){return(r+h)%2==0};case L.PATTERN001:return function(r,h){return r%2==0};case L.PATTERN010:return function(r,h){return h%3==0};case L.PATTERN011:return function(r,h){return(r+h)%3==0};case L.PATTERN100:return function(r,h){return(Math.floor(r/2)+Math.floor(h/3))%2==0};case L.PATTERN101:return function(r,h){return r*h%2+r*h%3==0};case L.PATTERN110:return function(r,h){return(r*h%2+r*h%3)%2==0};case L.PATTERN111:return function(r,h){return(r*h%3+(r+h)%2)%2==0};default:throw"bad maskPattern:"+t}},n.getErrorCorrectPolynomial=function(t){for(var r=K([1],0),h=0;h<t;h+=1)r=r.multiply(K([1,M.gexp(h)],0));return r},n.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case D.MODE_NUMBER:return 10;case D.MODE_ALPHA_NUM:return 9;case D.MODE_8BIT_BYTE:return 8;case D.MODE_KANJI:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case D.MODE_NUMBER:return 12;case D.MODE_ALPHA_NUM:return 11;case D.MODE_8BIT_BYTE:return 16;case D.MODE_KANJI:return 10;default:throw"mode:"+t}else if(r<41)switch(t){case D.MODE_NUMBER:return 14;case D.MODE_ALPHA_NUM:return 13;case D.MODE_8BIT_BYTE:return 16;case D.MODE_KANJI:return 12;default:throw"mode:"+t}else throw"type:"+r},n.getLostPoint=function(t){for(var r=t.getModuleCount(),h=0,i=0;i<r;i+=1)for(var v=0;v<r;v+=1){for(var _=0,B=t.isDark(i,v),y=-1;y<=1;y+=1)if(!(i+y<0||r<=i+y))for(var T=-1;T<=1;T+=1)v+T<0||r<=v+T||y==0&&T==0||B==t.isDark(i+y,v+T)&&(_+=1);_>5&&(h+=3+_-5)}for(var i=0;i<r-1;i+=1)for(var v=0;v<r-1;v+=1){var E=0;t.isDark(i,v)&&(E+=1),t.isDark(i+1,v)&&(E+=1),t.isDark(i,v+1)&&(E+=1),t.isDark(i+1,v+1)&&(E+=1),(E==0||E==4)&&(h+=3)}for(var i=0;i<r;i+=1)for(var v=0;v<r-6;v+=1)t.isDark(i,v)&&!t.isDark(i,v+1)&&t.isDark(i,v+2)&&t.isDark(i,v+3)&&t.isDark(i,v+4)&&!t.isDark(i,v+5)&&t.isDark(i,v+6)&&(h+=40);for(var v=0;v<r;v+=1)for(var i=0;i<r-6;i+=1)t.isDark(i,v)&&!t.isDark(i+1,v)&&t.isDark(i+2,v)&&t.isDark(i+3,v)&&t.isDark(i+4,v)&&!t.isDark(i+5,v)&&t.isDark(i+6,v)&&(h+=40);for(var N=0,v=0;v<r;v+=1)for(var i=0;i<r;i+=1)t.isDark(i,v)&&(N+=1);var m=Math.abs(100*N/r/r-50)/5;return h+=m*10,h},n})(),M=(function(){for(var x=new Array(256),w=new Array(256),g=0;g<8;g+=1)x[g]=1<<g;for(var g=8;g<256;g+=1)x[g]=x[g-4]^x[g-5]^x[g-6]^x[g-8];for(var g=0;g<255;g+=1)w[x[g]]=g;var l={};return l.glog=function(n){if(n<1)throw"glog("+n+")";return w[n]},l.gexp=function(n){for(;n<0;)n+=255;for(;n>=256;)n-=255;return x[n]},l})();function K(x,w){if(typeof x.length>"u")throw x.length+"/"+w;var g=(function(){for(var n=0;n<x.length&&x[n]==0;)n+=1;for(var s=new Array(x.length-n+w),t=0;t<x.length-n;t+=1)s[t]=x[t+n];return s})(),l={};return l.getAt=function(n){return g[n]},l.getLength=function(){return g.length},l.multiply=function(n){for(var s=new Array(l.getLength()+n.getLength()-1),t=0;t<l.getLength();t+=1)for(var r=0;r<n.getLength();r+=1)s[t+r]^=M.gexp(M.glog(l.getAt(t))+M.glog(n.getAt(r)));return K(s,0)},l.mod=function(n){if(l.getLength()-n.getLength()<0)return l;for(var s=M.glog(l.getAt(0))-M.glog(n.getAt(0)),t=new Array(l.getLength()),r=0;r<l.getLength();r+=1)t[r]=l.getAt(r);for(var r=0;r<n.getLength();r+=1)t[r]^=M.gexp(M.glog(n.getAt(r))+s);return K(t,0).mod(n)},l}var Y=(function(){var x=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],w=function(n,s){var t={};return t.totalCount=n,t.dataCount=s,t},g={},l=function(n,s){switch(s){case O.L:return x[(n-1)*4+0];case O.M:return x[(n-1)*4+1];case O.Q:return x[(n-1)*4+2];case O.H:return x[(n-1)*4+3];default:return}};return g.getRSBlocks=function(n,s){var t=l(n,s);if(typeof t>"u")throw"bad rs block @ typeNumber:"+n+"/errorCorrectionLevel:"+s;for(var r=t.length/3,h=[],i=0;i<r;i+=1)for(var v=t[i*3+0],_=t[i*3+1],B=t[i*3+2],y=0;y<v;y+=1)h.push(w(_,B));return h},g})(),G=function(){var x=[],w=0,g={};return g.getBuffer=function(){return x},g.getAt=function(l){var n=Math.floor(l/8);return(x[n]>>>7-l%8&1)==1},g.put=function(l,n){for(var s=0;s<n;s+=1)g.putBit((l>>>n-s-1&1)==1)},g.getLengthInBits=function(){return w},g.putBit=function(l){var n=Math.floor(w/8);x.length<=n&&x.push(0),l&&(x[n]|=128>>>w%8),w+=1},g},$=function(x){var w=D.MODE_NUMBER,g=x,l={};l.getMode=function(){return w},l.getLength=function(t){return g.length},l.write=function(t){for(var r=g,h=0;h+2<r.length;)t.put(n(r.substring(h,h+3)),10),h+=3;h<r.length&&(r.length-h==1?t.put(n(r.substring(h,h+1)),4):r.length-h==2&&t.put(n(r.substring(h,h+2)),7))};var n=function(t){for(var r=0,h=0;h<t.length;h+=1)r=r*10+s(t.charAt(h));return r},s=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-48;throw"illegal char :"+t};return l},W=function(x){var w=D.MODE_ALPHA_NUM,g=x,l={};l.getMode=function(){return w},l.getLength=function(s){return g.length},l.write=function(s){for(var t=g,r=0;r+1<t.length;)s.put(n(t.charAt(r))*45+n(t.charAt(r+1)),11),r+=2;r<t.length&&s.put(n(t.charAt(r)),6)};var n=function(s){if("0"<=s&&s<="9")return s.charCodeAt(0)-48;if("A"<=s&&s<="Z")return s.charCodeAt(0)-65+10;switch(s){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+s}};return l},V=function(x){var w=D.MODE_8BIT_BYTE,g=x,l=P.stringToBytes(x),n={};return n.getMode=function(){return w},n.getLength=function(s){return l.length},n.write=function(s){for(var t=0;t<l.length;t+=1)s.put(l[t],8)},n},q=function(x){var w=D.MODE_KANJI,g=x,l=P.stringToBytesFuncs.SJIS;if(!l)throw"sjis not supported.";(function(t,r){var h=l(t);if(h.length!=2||(h[0]<<8|h[1])!=r)throw"sjis not supported."})("\u53CB",38726);var n=l(x),s={};return s.getMode=function(){return w},s.getLength=function(t){return~~(n.length/2)},s.write=function(t){for(var r=n,h=0;h+1<r.length;){var i=(255&r[h])<<8|255&r[h+1];if(33088<=i&&i<=40956)i-=33088;else if(57408<=i&&i<=60351)i-=49472;else throw"illegal char at "+(h+1)+"/"+i;i=(i>>>8&255)*192+(i&255),t.put(i,13),h+=2}if(h<r.length)throw"illegal char at "+(h+1)},s},j=function(){var x=[],w={};return w.writeByte=function(g){x.push(g&255)},w.writeShort=function(g){w.writeByte(g),w.writeByte(g>>>8)},w.writeBytes=function(g,l,n){l=l||0,n=n||g.length;for(var s=0;s<n;s+=1)w.writeByte(g[s+l])},w.writeString=function(g){for(var l=0;l<g.length;l+=1)w.writeByte(g.charCodeAt(l))},w.toByteArray=function(){return x},w.toString=function(){var g="";g+="[";for(var l=0;l<x.length;l+=1)l>0&&(g+=","),g+=x[l];return g+="]",g},w},z=function(){var x=0,w=0,g=0,l="",n={},s=function(r){l+=String.fromCharCode(t(r&63))},t=function(r){if(!(r<0)){if(r<26)return 65+r;if(r<52)return 97+(r-26);if(r<62)return 48+(r-52);if(r==62)return 43;if(r==63)return 47}throw"n:"+r};return n.writeByte=function(r){for(x=x<<8|r&255,w+=8,g+=1;w>=6;)s(x>>>w-6),w-=6},n.flush=function(){if(w>0&&(s(x<<6-w),x=0,w=0),g%3!=0)for(var r=3-g%3,h=0;h<r;h+=1)l+="="},n.toString=function(){return l},n},rr=function(x){var w=x,g=0,l=0,n=0,s={};s.read=function(){for(;n<8;){if(g>=w.length){if(n==0)return-1;throw"unexpected end of file./"+n}var r=w.charAt(g);if(g+=1,r=="=")return n=0,-1;if(r.match(/^\s$/))continue;l=l<<6|t(r.charCodeAt(0)),n+=6}var h=l>>>n-8&255;return n-=8,h};var t=function(r){if(65<=r&&r<=90)return r-65;if(97<=r&&r<=122)return r-97+26;if(48<=r&&r<=57)return r-48+52;if(r==43)return 62;if(r==47)return 63;throw"c:"+r};return s},tr=function(x,w){var g=x,l=w,n=new Array(x*w),s={};s.setPixel=function(i,v,_){n[v*g+i]=_},s.write=function(i){i.writeString("GIF87a"),i.writeShort(g),i.writeShort(l),i.writeByte(128),i.writeByte(0),i.writeByte(0),i.writeByte(0),i.writeByte(0),i.writeByte(0),i.writeByte(255),i.writeByte(255),i.writeByte(255),i.writeString(","),i.writeShort(0),i.writeShort(0),i.writeShort(g),i.writeShort(l),i.writeByte(0);var v=2,_=r(v);i.writeByte(v);for(var B=0;_.length-B>255;)i.writeByte(255),i.writeBytes(_,B,255),B+=255;i.writeByte(_.length-B),i.writeBytes(_,B,_.length-B),i.writeByte(0),i.writeString(";")};var t=function(i){var v=i,_=0,B=0,y={};return y.write=function(T,E){if(T>>>E)throw"length over";for(;_+E>=8;)v.writeByte(255&(T<<_|B)),E-=8-_,T>>>=8-_,B=0,_=0;B=T<<_|B,_=_+E},y.flush=function(){_>0&&v.writeByte(B)},y},r=function(i){for(var v=1<<i,_=(1<<i)+1,B=i+1,y=h(),T=0;T<v;T+=1)y.add(String.fromCharCode(T));y.add(String.fromCharCode(v)),y.add(String.fromCharCode(_));var E=j(),N=t(E);N.write(v,B);var m=0,U=String.fromCharCode(n[m]);for(m+=1;m<n.length;){var H=String.fromCharCode(n[m]);m+=1,y.contains(U+H)?U=U+H:(N.write(y.indexOf(U),B),y.size()<4095&&(y.size()==1<<B&&(B+=1),y.add(U+H)),U=H)}return N.write(y.indexOf(U),B),N.write(_,B),N.flush(),E.toByteArray()},h=function(){var i={},v=0,_={};return _.add=function(B){if(_.contains(B))throw"dup key:"+B;i[B]=v,v+=1},_.size=function(){return v},_.indexOf=function(B){return i[B]},_.contains=function(B){return typeof i[B]<"u"},_};return s},er=function(x,w,g){for(var l=tr(x,w),n=0;n<w;n+=1)for(var s=0;s<x;s+=1)l.setPixel(s,n,g(s,n));var t=j();l.write(t);for(var r=z(),h=t.toByteArray(),i=0;i<h.length;i+=1)r.writeByte(h[i]);return r.flush(),"data:image/gif;base64,"+r};return P})();(function(){qrcode.stringToBytesFuncs["UTF-8"]=function(P){function D(O){for(var L=[],k=0;k<O.length;k++){var M=O.charCodeAt(k);M<128?L.push(M):M<2048?L.push(192|M>>6,128|M&63):M<55296||M>=57344?L.push(224|M>>12,128|M>>6&63,128|M&63):(k++,M=65536+((M&1023)<<10|O.charCodeAt(k)&1023),L.push(240|M>>18,128|M>>12&63,128|M>>6&63,128|M&63))}return L}return D(P)}})(),(function(P){typeof define=="function"&&define.amd?define([],P):typeof exports=="object"&&(module.exports=P())})(function(){return qrcode});</script>
+<script type="module">
+/* =====================================================================
+   Live quiz · ENHT renal education · single file, GitHub Pages + Firebase Realtime Database
+   Participant:  .../livequiz/?s=va26          Presenter: .../livequiz/?s=va26&mode=host
+   Results screen for the slide (read-only, nothing to click): .../livequiz/?s=va26&mode=screen
+   Demo without Firebase (tabs on one computer): add &demo=1
+   ===================================================================== */
+// 1) Paste your Firebase web-app config here (Firebase console > Project settings > Your apps > Config)
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyD0MwZRvyqIRH_ggJa_qZrq2C70yTOHilY",
+  authDomain: "livequiz-masterclass.firebaseapp.com",
+  databaseURL: "https://livequiz-masterclass-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "livequiz-masterclass",
+  storageBucket: "livequiz-masterclass.firebasestorage.app",
+  messagingSenderId: "948259587644",
+  appId: "1:948259587644:web:885eed6749827661042539"
+};
+const FB_VERSION = "10.12.0";
+const DEFAULT_SESSION = "va26";
+// When the final quiz opens by itself (UK time is UTC in November). The presenter screen can open it earlier.
+const FINAL_OPENS = { va26: "2026-11-26T10:12:00Z" };
+
+// 2) Question sets. Any session code uses the default set unless listed in SESSION_SETS.
+const SETS = {
+  va26: {
+    title: "Escalation pathways · vascular access",
+    pre: ["q1", "q2", "q3", "q4"],
+    post: ["q1", "q2", "q3", "q4", "q5"],
+    confidence: "How confident are you escalating an access problem: who to call, how fast, and where they go?",
+    questions: {
+      q1: { tag: "Shocked at Chiltern: where?", text: "Chiltern, 10:30. A venous needle has come out. The patient is grey and clammy, BP 76/40. Where do they go?",
+        options: ["Lister Ward 6B: they need dialysis", "Start resuscitation + 999 to Luton & Dunstable ED",
+                  "Stay on the unit until the renal SpR rings back", "Lister ED by hospital transport"], answer: "b",
+        why: "Shocked means emergency. At Chiltern: start resuscitation and call 999, to the nearest ED, Luton & Dunstable. The renal SpR pre-warns the ED." },
+      q2: { tag: "Bleeding on enoxaparin", text: "Needles out 25 minutes ago and the fistula is still bleeding despite pressure. He has enoxaparin 40 mg on dialysis. As well as pressure and dressings, what else?",
+        options: ["A tourniquet above the fistula", "Send him to Lister ED",
+                  "Medics or HD nurse specialist review the enoxaparin, and think stenosis", "Nothing: some bleeding after dialysis is normal"], answer: "c",
+        why: "Over 20 minutes is prolonged bleeding. The medics or HD nurse specialist review the dose (usually 40 → 20 mg next session), and prolonged bleeding should prompt a look for stenosis: VA team, Doppler within 2 days." },
+      q3: { tag: "Flow down 35%", text: "Access flow today is 1,100 mL/min. Three months ago it was 1,700. Recirculation is 4% (BTM). What now?",
+        options: ["Adequate (600–1,500): keep the 3-monthly checks", "Down 35%: urgent, tell the VA co-ordinator and unit consultant",
+                  "Can't trust it: recirculation is too high", "Too high: cardiac overload risk"], answer: "b",
+        why: "A drop of 30% or more counts as below 600: probable stenosis, and it could clot off. Recirculation under 10% means the reading is valid." },
+      q4: { tag: "New line: urokinase?", text: "A tunnelled line put in 9 days ago gives Qb 150, even after a bolus and repositioning. Urokinase on dialysis?",
+        options: ["Yes: 200,000 units over 3 hours", "No: it's under 2 weeks old, talk to the renal SpR",
+                  "Reverse the limbs and carry on", "Alteplase dwell, then urokinase"], answer: "b",
+        why: "No urokinase in a line less than 2 weeks old: talk to the renal SpR. And never reverse the limbs without a documented consultant or vascular-team plan." },
+      q5: { tag: "Can't needle: next?", text: "Two experienced staff can't needle a new fistula. It's Tuesday, 11:00. What next?",
+        options: ["Keep trying with a bigger needle", "Ultrasound-guided needling by trained staff, then the VA nurse",
+                  "Send them to ED for a line", "Single needle for the next few weeks"], answer: "b",
+        why: "Climb the ladder: ultrasound-guided needling by trained staff; still no luck, the renal VA nurse (Doppler within 2 days). Single needle for more than a week needs an access review." }
+    }
+  }
+};
+const SESSION_SETS = {};   // e.g. { "part3": "cannulation" } when you add more sets
+const UNITS = [["LIS", "Lister"], ["STR", "Strathmore"], ["BED", "Bedford"], ["CKC", "Chiltern"], ["HAR", "Harlow"],
+               ["STA", "St Albans"], ["OTH", "Other"]];
+const UNIT_NAME = Object.fromEntries(UNITS);
+const CONF_LABELS = ["Not at all", "A little", "Fairly", "Quite", "Very"];
+
+// ---------------------------------------------------------------- setup
+const params = new URLSearchParams(location.search);
+const SID = ((params.get("s") || DEFAULT_SESSION).toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 24)) || DEFAULT_SESSION;
+const MODE = ["host", "screen"].includes(params.get("mode")) ? params.get("mode") : "player";
+const DEMO = params.get("demo") === "1";
+const SET = SETS[SESSION_SETS[SID] || DEFAULT_SESSION] || SETS[DEFAULT_SESSION];
+const ROOT = "lq/" + SID;
+const JOIN_URL = location.origin + location.pathname + (SID === DEFAULT_SESSION ? "" : "?s=" + SID);
+const JOIN_TEXT = (location.host + location.pathname).replace(/\/(index\.html)?$/, "") + (SID === DEFAULT_SESSION ? "" : "?s=" + SID);
+const app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const L = i => "abcd"[i];
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+let DB = null;            // adapter
+let clockOffset = 0;      // server - local (ms)
+const now = () => Date.now() + clockOffset;
+let connected = true;
+
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+// ---------------------------------------------------------------- data adapters
+async function firebaseAdapter() {
+  const base = "https://www.gstatic.com/firebasejs/" + FB_VERSION + "/";
+  const [fa, fd, fau] = await Promise.all([import(base + "firebase-app.js"), import(base + "firebase-database.js"),
+                                           import(base + "firebase-auth.js")]);
+  const fb = fa.getApps().length ? fa.getApp() : fa.initializeApp(FIREBASE_CONFIG);
+  const auth = fau.getAuth(fb);
+  const cred = await fau.signInAnonymously(auth);
+  const db = fd.getDatabase(fb);
+  const R = p => fd.ref(db, p);
+  return {
+    uid: cred.user.uid,
+    listen: (p, cb, err) => fd.onValue(R(p), s => cb(s.val()), e => err && err(e)),
+    set: (p, v) => fd.set(R(p), v),
+    update: (p, o) => fd.update(R(p), o),
+    remove: p => fd.remove(R(p)),
+    get: p => fd.get(R(p)).then(s => s.val()),
+    ts: () => fd.serverTimestamp(),
+    onConnected: cb => fd.onValue(R(".info/connected"), s => cb(!!s.val())),
+    onOffset: cb => fd.onValue(R(".info/serverTimeOffset"), s => cb(Number(s.val()) || 0))
+  };
+}
+
+function demoAdapter() {
+  // Same-browser demo: every tab shares localStorage; each tab is its own "device".
+  const KEY = "lqdemo-db";
+  let uid = sessionStorage.getItem("lqdemo-uid");
+  if (!uid) { uid = ({ host: "host-", screen: "scr-" }[MODE] || "p-") + Math.random().toString(36).slice(2, 9); sessionStorage.setItem("lqdemo-uid", uid); }
+  const read = () => { try { return JSON.parse(store.get(KEY) || "{}"); } catch (e) { return {}; } };
+  const parts = p => p.split("/").filter(Boolean);
+  const getAt = (obj, p) => parts(p).reduce((o, k) => (o && typeof o === "object") ? o[k] : undefined, obj);
+  const TS = { ".sv": "timestamp" };
+  const resolve = v => (v && typeof v === "object") ? (v[".sv"] === "timestamp" ? Date.now()
+                    : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, resolve(x)]))) : v;
+  const prune = o => { if (!o || typeof o !== "object") return o; for (const k of Object.keys(o)) { o[k] = prune(o[k]);
+                       if (o[k] === null || o[k] === undefined || (typeof o[k] === "object" && !Object.keys(o[k]).length)) delete o[k]; } return o; };
+  const setAt = (obj, p, v) => { const ks = parts(p); let o = obj; ks.slice(0, -1).forEach(k => { if (!o[k] || typeof o[k] !== "object") o[k] = {}; o = o[k]; });
+                                 o[ks[ks.length - 1]] = v; };
+  const listeners = new Set();
+  const fire = () => { const d = read(); listeners.forEach(l => l.cb(getAt(d, l.p) ?? null)); };
+  window.addEventListener("storage", e => { if (e.key === KEY) fire(); });
+  const writeOnce = p => /\/ans\/(pre|post)\/[^/]+\/[^/]+$/.test(p);
+  const isHostPath = p => /\/(state|seen$|ans$)/.test(p) && !/\/seen\/[^/]+$/.test(p);
+  const commit = (fn) => { const d = read(); fn(d); store.set(KEY, JSON.stringify(prune(d))); setTimeout(fire, 0); };
+  return {
+    uid,
+    listen: (p, cb) => { const l = { p, cb }; listeners.add(l); setTimeout(() => cb(getAt(read(), p) ?? null), 0); return () => listeners.delete(l); },
+    set: async (p, v) => {
+      const d = read();
+      if (writeOnce(p) && getAt(d, p) !== undefined) throw new Error("PERMISSION_DENIED (demo: write-once)");
+      if (p.endsWith("/hostkey") && getAt(d, p) !== undefined) throw new Error("PERMISSION_DENIED");
+      if (/\/hosts\//.test(p) && v !== getAt(d, p.replace(/\/hosts\/.*/, "/hostkey"))) throw new Error("PERMISSION_DENIED");
+      commit(x => setAt(x, p, resolve(v)));
+    },
+    update: async (p, o) => { for (const [k, v] of Object.entries(o)) await DB.set(p + "/" + k, v); },
+    remove: async p => commit(x => setAt(x, p, null)),
+    get: async p => getAt(read(), p) ?? null,
+    ts: () => TS,
+    onConnected: cb => cb(true),
+    onOffset: cb => cb(0)
+  };
+}
+
+function configReady() {
+  return FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL;
+}
+
+async function connect() {
+  if (DEMO) return demoAdapter();
+  if (!configReady()) throw Object.assign(new Error("not-configured"), { code: "not-configured" });
+  return firebaseAdapter();
+}
+
+function friendlyError(e) {
+  const c = (e && (e.code || e.message)) || String(e);
+  if (c === "not-configured") return "This quiz page hasn't been connected to its database yet. Presenter: paste the Firebase config into index.html (see the setup guide).";
+  if (/admin-restricted-operation|operation-not-allowed/.test(c)) return "Anonymous sign-in is switched off in Firebase. Presenter: Firebase console → Authentication → Sign-in method → Anonymous → Enable.";
+  if (/unauthorized-domain|requests-from-referer|API_KEY_HTTP_REFERRER_BLOCKED/i.test(c)) return "This web address isn't allowed by the Firebase project. Presenter: add it under Authentication → Settings → Authorised domains.";
+  if (/network-request-failed|Failed to fetch|import/i.test(c)) return "Can't reach the quiz server. Check the Wi-Fi or mobile data, then reload the page.";
+  if (/too-many-requests/.test(c)) return "Too many people joined from one network at once. Wait a minute and reload.";
+  if (/PERMISSION_DENIED/i.test(c)) return "The database refused that. Presenter: check the database rules from the setup guide are published.";
+  return "Something went wrong: " + c;
+}
+
+function scoreOf(ans, ids) {
+  let right = 0, done = 0;
+  for (const id of ids) { const a = ans && ans[id]; if (a) { done++; if (a === SET.questions[id].answer) right++; } }
+  return { right, done };
+}
+
+// ====================================================================== FINAL QUIZ: OPEN?
+const opensAt = () => { const x = FINAL_OPENS[SID] ? Date.parse(FINAL_OPENS[SID]) : NaN; return isNaN(x) ? null : x; };
+function finalOpen(st) {
+  st = st || {};
+  if (st.p === "final") return true;
+  if (st.hold) return false;
+  const t = opensAt();
+  return t !== null && now() >= t;
+}
+function opensText() {
+  const t = opensAt();
+  if (t === null) return "when the presenter opens it";
+  const d = new Date(t);
+  const time = d.toLocaleTimeString("en-GB", { timeZone: "Europe/London", hour: "2-digit", minute: "2-digit" });
+  const day = d.toLocaleDateString("en-GB", { timeZone: "Europe/London", weekday: "short", day: "numeric", month: "short" });
+  return "at " + time + " on " + day;
+}
+
+// ====================================================================== PARTICIPANT
+const P = { state: null, pre: null, post: null, sel: null, unitSkip: false, wrote: {}, started: false, checked: null,
+            open: null, local: {} };
+
+async function player() {
+  renderShell("Connecting…");
+  try { DB = await connect(); } catch (e) { return showError(e); }
+  DB.onConnected(c => { connected = c; updateStatus(); });
+  DB.onOffset(o => clockOffset = o);
+  DB.set(ROOT + "/seen/" + DB.uid, DB.ts()).catch(() => {});
+  DB.listen(ROOT + "/state", v => { P.state = v || { p: "pre" }; renderPlayer(); }, showError);
+  DB.listen(ROOT + "/ans/pre/" + DB.uid, v => { P.pre = v || {}; renderPlayer(); }, showError);
+  DB.listen(ROOT + "/ans/post/" + DB.uid, v => { P.post = Object.assign({}, v || {}, P.local); renderPlayer(); }, showError);
+  setInterval(() => { if (P.state && finalOpen(P.state) !== P.open) renderPlayer(); }, 1000);
+}
+
+function renderShell(msg) {
+  app.innerHTML = `<div class="bar"><div class="t">${esc(SET.title)}<small>Live quiz · session ${esc(SID)}${DEMO ? " · demo" : ""}</small></div>
+    <div class="status" id="st"><span class="dot"></span><span>Live</span></div></div>
+    <main class="p-main" id="pm"><div class="card center"><p class="sub">${esc(msg)}</p><div class="pulse"><i></i><i></i><i></i></div></div></main>`;
+}
+
+function updateStatus() {
+  const st = document.getElementById("st");
+  if (st) st.innerHTML = `<span class="dot ${connected ? "" : "off"}"></span><span>${connected ? "Live" : "Reconnecting…"}</span>`;
+}
+
+function showError(e) {
+  console.error(e);
+  const pm = document.getElementById("pm") || app;
+  pm.innerHTML = `<div class="err"><b>Sorry — the quiz can't start on this device.</b><br>${esc(friendlyError(e))}</div>
+    <button class="link" onclick="location.reload()">Try again</button>`;
+}
+
+function unitOf() { return (P.pre && P.pre.u) || (P.post && P.post.u) || null; }
+
+async function write(phase, key, val) {
+  const tag = phase + key;
+  if (P.wrote[tag]) return;
+  P.wrote[tag] = true;
+  try { await DB.set(`${ROOT}/ans/${phase}/${DB.uid}/${key}`, val); }
+  catch (e) { if (!/PERMISSION_DENIED|write-once/i.test(String(e && (e.code || e.message)))) { P.wrote[tag] = false; toast("Not saved — check your connection"); } }
+}
+
+function renderPlayer() {
+  const pm = document.getElementById("pm");
+  if (!pm || P.pre === null || P.post === null || !P.state) return;
+  P.open = finalOpen(P.state);
+  if (P.open) return renderFinal(pm);
+  renderPre(pm);
+}
+
+function renderUnit(pm, phase) {
+  pm.innerHTML = `<div class="card"><p class="kicker">Welcome</p><h1 class="q">Which unit do you work in?</h1>
+    <p class="sub">Anonymous: this is the only thing we ask about you.</p>
+    <div class="units">${UNITS.map(([c, n]) => `<button class="opt" data-u="${c}">${esc(n)}</button>`).join("")}</div>
+    <button class="link" id="skip">Skip</button></div>`;
+  pm.querySelectorAll("[data-u]").forEach(b => b.onclick = () => { write(phase, "u", b.dataset.u); });
+  pm.querySelector("#skip").onclick = () => { P.unitSkip = true; renderPlayer(); };
+}
+
+function progress(done, total) {
+  return `<div class="progress">${Array.from({ length: total }, (_, i) => `<i class="${i < done ? "on" : ""}"></i>`).join("")}</div>`;
+}
+
+function questionCard(pm, kicker, id, prog, button, onGo) {
+  const q = SET.questions[id];
+  pm.innerHTML = `<div class="card">${prog}<p class="kicker">${esc(kicker)}</p>
+    <h1 class="q">${esc(q.text)}</h1><div class="opts">${q.options.map((o, i) => `<button class="opt ${P.sel === L(i) ? "sel" : ""}" data-a="${L(i)}"><span class="l">${L(i).toUpperCase()}</span><span>${esc(o)}</span></button>`).join("")}</div>
+    <button class="go" id="go" ${P.sel ? "" : "disabled"}>${esc(button)}</button></div>`;
+  pm.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { P.sel = b.dataset.a; renderPlayer(); });
+  pm.querySelector("#go").onclick = () => { if (!P.sel) return; const a = P.sel; P.sel = null; onGo(a); };
+}
+
+function renderPre(pm) {
+  const pre = P.pre;
+  if (!pre.u && !P.unitSkip) return renderUnit(pm, "pre");
+  const next = SET.pre.find(id => !pre[id]);
+  const prog = progress(SET.pre.filter(id => pre[id]).length + (pre.c ? 1 : 0), SET.pre.length + 1);
+  if (next) {
+    const n = SET.pre.indexOf(next) + 1;
+    questionCard(pm, `Before we start · question ${n} of ${SET.pre.length}`, next, prog, "Next ›", a => write("pre", next, a));
+    const note = document.createElement("p"); note.className = "note"; note.textContent = "Answer what you think right now: no looking it up.";
+    pm.querySelector(".card").appendChild(note);
+    return;
+  }
+  if (!pre.c) return renderConf(pm, "pre", prog, "Last one");
+  pm.innerHTML = `<div class="card center"><div class="big">✅</div><h1 class="q">All done, thank you</h1>
+    <p class="sub">Keep this page open. At the end of the talk the final quiz opens here, with the same questions, so we can see what stuck.</p>
+    <div class="pulse"><i></i><i></i><i></i></div></div>`;
+}
+
+function renderConf(pm, phase, prog, kicker) {
+  pm.innerHTML = `<div class="card">${prog || ""}<p class="kicker">${esc(kicker)}</p><h1 class="q">${esc(SET.confidence)}</h1>
+    <div class="scale">${CONF_LABELS.map((t, i) => `<button class="opt ${P.sel === String(i + 1) ? "sel" : ""}" data-c="${i + 1}"><b>${i + 1}</b>${esc(t)}</button>`).join("")}</div>
+    <button class="go" id="go" ${P.sel ? "" : "disabled"}>Done ›</button></div>`;
+  pm.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { P.sel = b.dataset.c; renderPlayer(); });
+  pm.querySelector("#go").onclick = async () => { if (!P.sel) return; const c = Number(P.sel); P.sel = null; await write(phase, "c", c); };
+}
+
+function renderFinal(pm) {
+  const post = P.post;
+  const answered = SET.post.filter(id => post[id]).length;
+  if (!P.started && !answered && !post.c) {
+    const warm = scoreOf(P.pre, SET.pre).done > 0;
+    pm.innerHTML = `<div class="card center"><p class="kicker">End of the talk</p><h1 class="q">Final quiz</h1>
+      <p class="sub">${SET.post.length} questions at your own pace${warm ? ", including the ones from this morning" : ""}. You'll see the answer after each one.</p>
+      <button class="go" id="start">Start the final quiz ›</button></div>`;
+    pm.querySelector("#start").onclick = () => { P.started = true; renderPlayer(); };
+    return;
+  }
+  if (!unitOf() && !P.unitSkip) return renderUnit(pm, "post");
+  const prog = progress(answered + (post.c ? 1 : 0), SET.post.length + 1);
+  if (P.checked) return renderChecked(pm, P.checked, prog);
+  const next = SET.post.find(id => !post[id]);
+  if (next) {
+    const n = SET.post.indexOf(next) + 1;
+    return questionCard(pm, `Final quiz · question ${n} of ${SET.post.length}`, next, prog, "Check my answer ›", a => {
+      P.local[next] = a; P.post[next] = a; P.checked = next;
+      write("post", next, a);
+      renderPlayer();
+    });
+  }
+  if (!post.c) return renderConf(pm, "post", prog, "Last one");
+  renderDone(pm);
+}
+
+function renderChecked(pm, id, prog) {
+  const q = SET.questions[id], mine = P.post[id], n = SET.post.indexOf(id) + 1;
+  const right = mine === q.answer;
+  const opts = q.options.map((o, i) => {
+    const a = L(i), cls = a === q.answer ? "right" : (a === mine ? "wrong" : "");
+    return `<button class="opt ${cls}" disabled><span class="l">${a.toUpperCase()}</span><span>${esc(o)}</span></button>`;
+  }).join("");
+  const last = n === SET.post.length;
+  pm.innerHTML = `<div class="card">${prog}<p class="kicker">Final quiz · question ${n} of ${SET.post.length}</p>
+    <h1 class="q">${esc(q.text)}</h1><div class="opts">${opts}</div>
+    <div class="feedback ${right ? "ok" : "no"}"><b class="h">${right ? "✓ Correct!" : "✗ Not quite: it's " + q.answer.toUpperCase()}</b>${esc(q.why)}</div>
+    <button class="go" id="go">${last ? "Last one: how confident? ›" : "Next question ›"}</button></div>`;
+  pm.querySelector("#go").onclick = () => { P.checked = null; renderPlayer(); };
+}
+
+function renderDone(pm) {
+  const core = SET.pre;
+  const a = scoreOf(P.pre, core), b = scoreOf(P.post, core), all = scoreOf(P.post, SET.post);
+  const mine = a.done ? `<div class="score"><div><b>${a.right}/${a.done}</b><span>this morning</span></div>
+      <div class="arrow">→</div><div><b>${b.done ? b.right + "/" + b.done : "–"}</b><span>now (same questions)</span></div></div>` : "";
+  pm.innerHTML = `<div class="card center"><div class="big">🎉</div><h1 class="q">Thanks for taking part!</h1>${mine}
+    <p class="sub">Final quiz: <b>${all.right} out of ${SET.post.length}</b>. Look up at the screen to see how the room did.</p>
+    <p class="note">Your answers are anonymous. Questions about today? Ask your clinical practice educator.</p></div>`;
+}
+
+// ====================================================================== PRESENTER and RESULTS SCREEN
+const H = { state: { p: "pre" }, seen: {}, ans: { pre: {}, post: {} }, menu: false, qr: false, open: null };
+
+async function host() {
+  document.body.className = "host";
+  app.innerHTML = `<div class="gate"><h1>Connecting…</h1></div>`;
+  try { DB = await connect(); } catch (e) { return hostError(e); }
+  DB.onConnected(c => { connected = c; renderHost(); });
+  DB.onOffset(o => clockOffset = o);
+  const key = store.get("lq-key-" + SID);
+  if (key && await registerHost(key, false)) return startHost();
+  hostGate();
+}
+
+function hostError(e) {
+  console.error(e);
+  app.innerHTML = `<div class="gate"><h1>Can't start the presenter screen</h1><p>${esc(friendlyError(e))}</p>
+    <button class="go" onclick="location.reload()">Try again</button></div>`;
+}
+
+async function registerHost(key, createIfFree) {
+  if (createIfFree) {
+    try { await DB.set(ROOT + "/hostkey", key); } catch (e) { /* already set: the key check below decides */ }
+    try { await DB.set(ROOT + "/claimed", true); } catch (e) { /* already claimed */ }
+  }
+  try {
+    await DB.set(ROOT + "/hosts/" + DB.uid, key);
+    store.set("lq-key-" + SID, key);
+    return true;
+  } catch (e) { return false; }
+}
+
+async function hostGate(msg) {
+  let claimed = false;
+  try { claimed = !!(await DB.get(ROOT + "/claimed")); } catch (e) { return hostError(e); }
+  app.innerHTML = `<div class="gate"><h1>${claimed ? "Presenter key" : "Set up this session"}</h1>
+    <p>${claimed ? `Session <b>${esc(SID)}</b> is protected. Type the presenter key you chose when you set it up.`
+      : `Session <b>${esc(SID)}</b> hasn't been set up yet. Choose a presenter key (at least 6 characters) — you'll type it once on each device you use as the presenter screen. Do this before the session: whoever sets it first controls the quiz.`}</p>
+    ${msg ? `<p class="err">${esc(msg)}</p>` : ""}
+    <input id="k1" type="password" autocomplete="current-password" placeholder="Presenter key">
+    ${claimed ? "" : `<input id="k2" type="password" autocomplete="new-password" placeholder="Type it again">`}
+    <button class="go" id="kgo">${claimed ? "Open presenter screen" : "Create and open"}</button>
+    <p style="font-size:13px">Participants join at <b>${esc(JOIN_TEXT)}</b></p></div>`;
+  const k1 = document.getElementById("k1"); k1.focus();
+  const go = async () => {
+    const a = k1.value.trim(), b = claimed ? a : document.getElementById("k2").value.trim();
+    if (a.length < (claimed ? 4 : 6)) return hostGate(claimed ? "Type your presenter key." : "Use at least 6 characters.");
+    if (a !== b) return hostGate("The two keys don't match.");
+    if (await registerHost(a, !claimed)) startHost();
+    else hostGate(claimed ? "That key didn't work. Check it and try again." : "Couldn't create the session — has someone else just set it up? Reload and try again.");
+  };
+  document.getElementById("kgo").onclick = go;
+  app.querySelectorAll("input").forEach(i => i.onkeydown = e => { if (e.key === "Enter") go(); });
+}
+
+function listenAll(render, onErr) {
+  DB.listen(ROOT + "/state", v => { H.state = v || { p: "pre" }; render(); }, onErr);
+  DB.listen(ROOT + "/seen", v => { H.seen = v || {}; render(); }, onErr);
+  DB.listen(ROOT + "/ans", v => { H.ans = { pre: (v && v.pre) || {}, post: (v && v.post) || {} }; render(); }, onErr);
+  setInterval(() => { if (finalOpen(H.state) !== H.open) render(); }, 1000);
+}
+
+function startHost() {
+  H.ready = true;
+  listenAll(renderHost, hostError);
+  document.addEventListener("keydown", hostKeys);
+  renderHost();
+}
+
+async function setOpen(open) {
+  const t = opensAt();
+  const st = open ? { p: "final", t: DB.ts() } : { p: "pre", t: DB.ts(), hold: t !== null && now() >= t };
+  try { await DB.set(ROOT + "/state", st); } catch (e) { toast(friendlyError(e)); }
+}
+
+function hostKeys(e) {
+  if (e.target && e.target.tagName === "INPUT") return;
+  const k = e.key;
+  if (k === "f" || k === "F") fullscreen();
+  else if (k === "q" || k === "Q") { H.qr = !H.qr; renderHost(); }
+  else if (k === "Escape") { H.menu = false; H.qr = false; renderHost(); }
+}
+
+function fullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
+  else document.exitFullscreen && document.exitFullscreen();
+}
+
+function people() {
+  const ids = new Set([...Object.keys(H.seen || {}), ...Object.keys(H.ans.pre || {}), ...Object.keys(H.ans.post || {})]);
+  return ids.size;
+}
+
+function unitFor(uid) {
+  const u = (H.ans.pre[uid] && H.ans.pre[uid].u) || (H.ans.post[uid] && H.ans.post[uid].u);
+  return UNIT_NAME[u] ? u : (u ? "OTH" : null);
+}
+
+function summary() {
+  const pre = H.ans.pre || {}, post = H.ans.post || {};
+  const core = SET.pre;
+  const perQ = SET.post.map(id => {
+    const tally = side => { let r = 0, n = 0; for (const a of Object.values(side)) { if (a && a[id]) { n++; if (a[id] === SET.questions[id].answer) r++; } } return { r, n }; };
+    return { id, pre: core.includes(id) ? tally(pre) : null, post: tally(post) };
+  });
+  const agg = (side) => { let r = 0, n = 0; for (const a of Object.values(side)) { const s = scoreOf(a, core); r += s.right; n += s.done; } return n ? Math.round(100 * r / n) : null; };
+  const conf = side => { const v = Object.values(side).map(a => a && a.c).filter(Boolean); return v.length ? (v.reduce((x, y) => x + y, 0) / v.length) : null; };
+  const both = Object.keys(pre).filter(u => scoreOf(pre[u], core).done >= 3 && scoreOf(post[u] || {}, core).done >= 3);
+  const matched = side => { let r = 0, n = 0; both.forEach(u => { const s = scoreOf(side[u], core); r += s.right; n += s.done; }); return n ? Math.round(100 * r / n) : null; };
+  const nPre = Object.values(pre).filter(a => scoreOf(a, core).done).length;
+  const nPost = Object.values(post).filter(a => scoreOf(a, SET.post).done).length;
+  const units = {};
+  for (const [uid, a] of Object.entries(post)) {
+    const s = scoreOf(a, SET.post); if (!s.done) continue;
+    const u = unitFor(uid) || "OTH";
+    units[u] = units[u] || { r: 0, n: 0, people: 0 };
+    units[u].r += s.right; units[u].n += s.done; units[u].people++;
+  }
+  const league = Object.entries(units).map(([u, v]) => ({ u, pct: Math.round(100 * v.r / v.n), people: v.people }))
+    .sort((x, y) => (y.people >= 2) - (x.people >= 2) || y.pct - x.pct);
+  const room = { pre: agg(pre), post: agg(post), nPre, nPost, both: both.length,
+                 cPre: conf(pre) && Math.round(conf(pre) * 10) / 10, cPost: conf(post) && Math.round(conf(post) * 10) / 10 };
+  return { perQ, room, matchedPre: matched(pre), matchedPost: matched(post), league };
+}
+
+function qrImg(text) {
+  try {
+    const q = qrcode(0, "M"); q.addData(text); q.make();
+    return q.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
+  } catch (e) { return `<p style="color:#212B32">${esc(text)}</p>`; }
+}
+
+function dashboardHtml(compact) {
+  const S = summary(), r = S.room;
+  const pct = v => v == null ? "–" : v + "%";
+  const qrows = S.perQ.map((x, i) => {
+    const pr = x.pre && x.pre.n ? Math.round(100 * x.pre.r / x.pre.n) : null;
+    const po = x.post.n ? Math.round(100 * x.post.r / x.post.n) : null;
+    return `<div class="brow"><span class="lab">Q${i + 1} <span style="font-weight:400;opacity:.8">${esc(SET.questions[x.id].tag || "")}</span></span><div class="btrack">
+      ${x.pre ? `<div class="b pre"><i style="width:0" data-w="${pr || 0}"></i><em>${pct(pr)}</em></div>` : `<div class="b pre" style="opacity:.35"><em>new</em></div>`}
+      <div class="b post"><i style="width:0" data-w="${po || 0}"></i><em>${pct(po)}</em></div></div></div>`;
+  }).join("");
+  const league = S.league.map((l, i) => `<div class="lrow"><span class="pos">${l.people >= 2 ? i + 1 : "·"}</span><span>${esc(UNIT_NAME[l.u] || "Other")} <small style="opacity:.7">(${l.people})</small></span><b>${l.people >= 2 ? l.pct + "%" : "–"}</b></div>`).join("");
+  const kpis = `<div class="kpi"><div><b>${pct(r.pre)}</b><span>this morning · ${r.nPre} people</span></div><div class="ar">→</div>
+      <div class="after"><b>${pct(r.post)}</b><span>now · ${r.nPost} people</span></div></div>
+      <div class="mini"><div class="kpi"><div><b>${r.cPre ?? "–"}</b><span>confidence before</span></div><div class="ar">→</div><div class="after"><b>${r.cPost ?? "–"}</b><span>after (out of 5)</span></div></div>
+      <div class="kpi"><div><b>${pct(S.matchedPre)}</b><span>same ${r.both} people, before</span></div><div class="ar">→</div><div class="after"><b>${pct(S.matchedPost)}</b><span>after</span></div></div></div>`;
+  const leagueBox = `<div class="league"><h2>Unit league (final quiz, 2 or more people)</h2>${league || `<div class="lrow"><span></span><span style="opacity:.7">No answers yet</span><span></span></div>`}</div>`;
+  const bars = `<div class="bars"><h2>Correct answers, question by question</h2>
+      <div class="legend"><span><i style="background:#9fb4c3"></i>this morning</span><span><i style="background:#7be495"></i>final quiz</span></div>${qrows}</div>`;
+  if (compact) return `<div class="res res3"><div>${kpis}</div>${bars}${leagueBox}</div>`;
+  return `<div class="res"><div><h1>Did it stick?</h1>${kpis}${leagueBox}</div>${bars}</div>`;
+}
+
+function animateBars(viewKey) {
+  const els = app.querySelectorAll("[data-w]");
+  const animate = viewKey !== H.lastView;
+  H.lastView = viewKey;
+  els.forEach(el => { if (!animate) el.style.width = el.dataset.w + "%"; });
+  if (animate) requestAnimationFrame(() => requestAnimationFrame(() => els.forEach(el => el.style.width = el.dataset.w + "%")));
+}
+
+function hostFrame(inner, foot) {
+  return `<div class="h-wrap"><div class="h-top"><div class="t">${esc(SET.title)}<small>Live quiz · ${esc(JOIN_TEXT)}</small></div>
+    <div class="pill" id="hc"></div><div class="pill"><span class="dot ${connected ? "" : "off"}"></span>${connected ? "Live" : "Reconnecting…"}</div></div>
+    <div class="h-main">${inner}</div>
+    <div class="h-foot"><div class="hint">${H.open ? "Final quiz open · results update live" : "Final quiz opens by itself " + esc(opensText())} · F full screen · Q show QR</div>
+    ${foot}<button class="hbtn" id="hm" aria-label="Menu">⋯</button></div></div>
+    ${H.menu ? `<div class="menu"><button id="m-qr">Show join QR code</button><button id="m-csv">Export results (CSV)</button>
+      <button id="m-copy">Copy participant link</button><button id="m-screen">Copy results-screen link (for the slide)</button>
+      <button id="m-reset">Reset this session…</button>
+      <button id="m-forget">Forget presenter key on this device</button></div>` : ""}
+    ${H.qr ? `<div class="overlay" id="ov"><div class="qrbox">${qrImg(JOIN_URL)}<div class="u">${esc(JOIN_TEXT)}</div></div></div>` : ""}`;
+}
+
+function renderCounts() {
+  const el = document.getElementById("hc");
+  if (el) el.textContent = "👥 " + people() + " joined";
+  const a = document.getElementById("c-join"); if (a) a.textContent = people();
+  const b = document.getElementById("c-pre");
+  if (b) b.textContent = Object.values(H.ans.pre || {}).filter(x => x && x.c).length;
+}
+
+const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const SCREEN_URL = JOIN_URL + (JOIN_URL.includes("?") ? "&" : "?") + (SID === DEFAULT_SESSION ? "s=" + SID + "&" : "") + "mode=screen";
+
+function renderHost() {
+  if (!DB || !H.ready) return;
+  H.open = finalOpen(H.state);
+  let inner, foot;
+  if (!H.open) {
+    const byUnit = {};
+    Object.keys(H.ans.pre).forEach(u => { const k = unitFor(u); if (k) byUnit[k] = (byUnit[k] || 0) + 1; });
+    const n = WORDS[SET.pre.length] || SET.pre.length;
+    inner = `<div class="lobby"><div class="qrbox">${qrImg(JOIN_URL)}<div class="u">${esc(JOIN_TEXT)}</div></div>
+      <div><h1>Scan to join</h1><p>${esc(n[0].toUpperCase() + n.slice(1))} quick questions now. At the end, a final quiz with the same questions, so we can see what stuck.</p>
+      <div class="counters"><div class="counter"><b id="c-join">0</b><span>joined</span></div><div class="counter"><b id="c-pre">0</b><span>finished the warm-up</span></div></div>
+      <div class="chips">${UNITS.filter(([c]) => byUnit[c]).map(([c, nm]) => `<span class="chip">${esc(nm)} · ${byUnit[c]}</span>`).join("")}</div></div></div>`;
+    foot = `<button class="hbtn primary" id="hopen">Open the final quiz now ›</button>`;
+  } else {
+    inner = dashboardHtml(false);
+    foot = `<button class="hbtn" id="hclose">Close the final quiz</button><button class="hbtn" id="hcsv">Export CSV</button>`;
+  }
+  app.innerHTML = hostFrame(inner, foot);
+  animateBars(H.open ? "final" : "pre");
+  renderCounts();
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  on("hopen", () => setOpen(true));
+  on("hclose", () => { if (confirm("Close the final quiz? Phones go back to the waiting screen.")) setOpen(false); });
+  on("hm", () => { H.menu = !H.menu; renderHost(); });
+  on("hcsv", exportCsv); on("m-csv", () => { H.menu = false; exportCsv(); renderHost(); });
+  on("m-qr", () => { H.menu = false; H.qr = true; renderHost(); }); on("ov", () => { H.qr = false; renderHost(); });
+  on("m-copy", async () => { H.menu = false; try { await navigator.clipboard.writeText(JOIN_URL); toast("Link copied"); } catch (e) { toast(JOIN_URL); } renderHost(); });
+  on("m-screen", async () => { H.menu = false; try { await navigator.clipboard.writeText(SCREEN_URL); toast("Results-screen link copied"); } catch (e) { toast(SCREEN_URL); } renderHost(); });
+  on("m-forget", () => { store.del("lq-key-" + SID); toast("Key forgotten on this device"); H.menu = false; renderHost(); });
+  on("m-reset", resetSession);
+}
+
+// ---------------- results screen: read-only, nothing to click (for Web Viewer on a slide, or a browser tab)
+async function screen() {
+  document.body.className = "host screen";
+  app.innerHTML = `<div class="s-msg">Connecting to the live results…</div>`;
+  try { DB = await connect(); } catch (e) { return screenError(e); }
+  DB.onConnected(c => { connected = c; renderScreen(); });
+  DB.onOffset(o => clockOffset = o);
+  H.ready = true;
+  listenAll(renderScreen, screenError);
+  renderScreen();
+}
+
+function screenError(e) {
+  console.error(e);
+  app.innerHTML = `<div class="s-msg"><div>The live results will appear here.<small>${esc(friendlyError(e))}</small></div></div>`;
+}
+
+function renderScreen() {
+  if (!DB || !H.ready) return;
+  H.open = finalOpen(H.state);
+  const r = summary().room;
+  const status = H.open ? `<b>${r.nPost}</b> of ${people()} have answered the final quiz`
+                        : `The final quiz opens ${esc(opensText())}`;
+  app.innerHTML = `<div class="s-wrap"><div class="s-top"><span class="s-title">Live results</span>
+      <span class="s-status">${status}</span><span class="dot ${connected ? "" : "off"}"></span>
+      <span class="s-join"><span>Not done it yet? <b>${esc(JOIN_TEXT)}</b></span><span class="qr">${qrImg(JOIN_URL)}</span></span></div>
+    ${dashboardHtml(true)}</div>`;
+  animateBars(H.open ? "final" : "pre");
+}
+
+async function resetSession() {
+  H.menu = false;
+  if (!confirm("Delete every answer in session " + SID + " and go back to the start?")) return renderHost();
+  if (!confirm("Sure? Export the CSV first if you need it. This can't be undone.")) return renderHost();
+  try {
+    await DB.remove(ROOT + "/ans"); await DB.remove(ROOT + "/seen");
+    await DB.set(ROOT + "/state", { p: "pre", t: DB.ts() });
+    toast("Session reset");
+  } catch (e) { toast(friendlyError(e)); }
+}
+
+function exportCsv() {
+  const pre = H.ans.pre || {}, post = H.ans.post || {};
+  const ids = [...new Set([...Object.keys(pre), ...Object.keys(post)])];
+  const head = ["person", "unit", ...SET.pre.map(q => "before_" + q), "before_confidence", ...SET.post.map(q => "after_" + q),
+                "after_confidence", "before_score", "after_score_same_questions", "after_score_all"];
+  const rows = ids.map((u, i) => {
+    const a = pre[u] || {}, b = post[u] || {};
+    const sa = scoreOf(a, SET.pre), sb = scoreOf(b, SET.pre), sc = scoreOf(b, SET.post);
+    return [i + 1, UNIT_NAME[unitFor(u)] || "", ...SET.pre.map(q => a[q] || ""), a.c || "", ...SET.post.map(q => b[q] || ""), b.c || "",
+            sa.done ? sa.right + "/" + sa.done : "", sb.done ? sb.right + "/" + sb.done : "", sc.done ? sc.right + "/" + sc.done : ""];
+  });
+  const key = ["answer key", "", ...SET.pre.map(q => SET.questions[q].answer), "", ...SET.post.map(q => SET.questions[q].answer), "", "", "", ""];
+  const csv = [head, key, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const aEl = document.createElement("a");
+  aEl.href = URL.createObjectURL(blob); aEl.download = `livequiz-${SID}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(aEl); aEl.click(); setTimeout(() => { URL.revokeObjectURL(aEl.href); aEl.remove(); }, 500);
+}
+
+// ---------------------------------------------------------------- go
+window.__lq = { H, P, summary, setOffset: ms => { clockOffset = ms; } };
+({ host, screen }[MODE] || player)();
+</script>
+</body>
+</html>
