@@ -715,6 +715,7 @@ function hostFrame(inner, foot) {
     ${foot}<button class="hbtn" id="hm" aria-label="Menu">⋯</button></div></div>
     ${H.menu ? `<div class="menu"><button id="m-qr">Show join QR code</button><button id="m-csv">Export results (CSV)</button>
       <button id="m-copy">Copy participant link</button><button id="m-screen">Copy results-screen link (for the slide)</button>
+      ${isPractice() ? `<button id="m-sample">Add practice answers (${PRACTICE.length} pretend people)…</button>` : ""}
       <button id="m-reset">Reset this session…</button>
       <button id="m-forget">Forget presenter key on this device</button></div>` : ""}
     ${H.qr ? `<div class="overlay" id="ov"><div class="qrbox">${qrImg(JOIN_URL)}<div class="u">${esc(JOIN_TEXT)}</div></div></div>` : ""}`;
@@ -761,6 +762,7 @@ function renderHost() {
   on("m-screen", async () => { H.menu = false; try { await navigator.clipboard.writeText(SCREEN_URL); toast("Results-screen link copied"); } catch (e) { toast(SCREEN_URL); } renderHost(); });
   on("m-forget", () => { store.del("lq-key-" + SID); toast("Key forgotten on this device"); H.menu = false; renderHost(); });
   on("m-reset", resetSession);
+  on("m-sample", addPracticeAnswers);
 }
 
 // ---------------- results screen: read-only, nothing to click (for Web Viewer on a slide, or a browser tab)
@@ -791,6 +793,38 @@ function renderScreen() {
       <span class="s-join"><span>Not done it yet? <b>${esc(JOIN_TEXT)}</b></span><span class="qr">${qrImg(JOIN_URL)}</span></span></div>
     ${dashboardHtml(true)}</div>`;
   animateBars(H.open ? "final" : "pre");
+}
+
+// Practice sessions only (never the real session): pretend people, so a rehearsal shows a full results screen.
+// unit, warm-up answers, confidence before, final answers, confidence after. Reset the session to remove them.
+const PRACTICE = [
+  ["LIS", "acbb", 2, "bcbbb", 4], ["LIS", "babb", 3, "bcbbb", 4], ["STR", "acab", 2, "bcbba", 4], ["STR", "dcbc", 2, "bcbbb", 5],
+  ["BED", "abab", 1, "bcbab", 3], ["BED", "bcaa", 2, "bcbbb", 4], ["BED", "acbb", 3, "bcbbb", 4], ["CKC", "adbb", 2, "bcbbb", 4],
+  ["CKC", "bcbb", 3, "bcbbb", 5], ["CKC", "dacb", 1, "bcabb", 3], ["HAR", "acba", 2, "bcbbb", 4], ["HAR", "bbbb", 2, "babbb", 4],
+  ["STA", "acaa", 2, "bcbbb", 4], ["STA", "dcbb", 3, "bcbbb", 5]
+];
+function isPractice() { return SID !== DEFAULT_SESSION && !FINAL_OPENS[SID]; }
+
+async function addPracticeAnswers() {
+  H.menu = false;
+  if (!isPractice()) return renderHost();
+  if (!confirm("Add answers from " + PRACTICE.length + " pretend people to practice session " + SID +
+               "? They show on the results screen until you reset the session.")) return renderHost();
+  const run = Date.now().toString(36);
+  try {
+    for (let i = 0; i < PRACTICE.length; i++) {
+      const [u, a1, c1, a2, c2] = PRACTICE[i];
+      const id = "practice-" + run + "-" + i;
+      const before = { u, c: c1 }, after = { u, c: c2 };
+      SET.pre.forEach((q, k) => { before[q] = a1[k]; });
+      SET.post.forEach((q, k) => { after[q] = a2[k]; });
+      await DB.set(`${ROOT}/ans/pre/${id}`, before);
+      await DB.set(`${ROOT}/ans/post/${id}`, after);
+      await DB.set(`${ROOT}/seen/${id}`, DB.ts());
+    }
+    toast("Added " + PRACTICE.length + " practice answers");
+  } catch (e) { toast(friendlyError(e)); }
+  renderHost();
 }
 
 async function resetSession() {
